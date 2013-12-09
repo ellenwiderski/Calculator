@@ -8,13 +8,29 @@
 #include <FL/Fl_Box.H>
 #include <vector>
 #include <string>
+#include "operandButton.h"
+#include "operatorButton.h"
 using namespace std;
 
 //Global Variables:
-vector<Fl_Button*> numberbuttons;
-vector<Fl_Button*> functionbuttons;
+Fl_Box *number;
+vector<OperandButton*> operandButtons;
+vector<OperatorButton*> operatorButtons;
+vector<const char*> stack;
 
 //Callbacks:
+
+void numbercb(Fl_Widget * w, void *) {
+  OperandButton *num = (OperandButton *)w;
+  stack.push_back(to_string(num->getOperand()).c_str());
+  number->copy_label(to_string(num->getOperand()).c_str());
+}
+
+void functioncb(Fl_Widget * w, void *) {
+  OperatorButton *op = (OperatorButton *)w;
+  stack.push_back(op->getOperator());
+  number->copy_label(op->getOperator());
+}
 
 //Main:
 int main(int argc, char* argv[]) {
@@ -22,6 +38,8 @@ int main(int argc, char* argv[]) {
   
   Fl_Box *screen = new Fl_Box(20,20,460,100,"");
   screen->box(FL_EMBOSSED_BOX);
+  number = new Fl_Box(370,20,100,100,"");
+  number->labelsize(48);
   // Purple!
   Fl_Color c = fl_rgb_color(240, 208, 255);
   screen->color(c);
@@ -34,18 +52,18 @@ int main(int argc, char* argv[]) {
 
   for (int i = 0; i < 10; i++) {
     if (i == 0) {
-      Fl_Button *num = new Fl_Button(x[i],y[i],220,68,"");
-      numberbuttons.push_back(num);
+      OperandButton *num = new OperandButton(x[i],y[i],220,68,"",i);
+      operandButtons.push_back(num);
     }
     else{
-      Fl_Button *num = new Fl_Button(x[i],y[i],100,68,"");
-      numberbuttons.push_back(num);
+      OperandButton *num = new OperandButton(x[i],y[i],100,68,"",i);
+      operandButtons.push_back(num);
     }
   }
 
   //Give those beautiful number buttons some labels & color
   int pos = 0;
-  for (auto i : numberbuttons) {
+  for (auto i : operandButtons) {
     i->copy_label(to_string(pos).c_str());
     i->color(c);
     i->labelcolor(FL_WHITE);
@@ -57,6 +75,10 @@ int main(int argc, char* argv[]) {
   y.clear();
 
   //Let's set their callbacks!
+  for (auto i :operandButtons) {
+    i->callback(numbercb);
+
+  }
 
   //Math function buttons!
   x = {20,140,260,380,380,380,380,380,260};
@@ -64,16 +86,19 @@ int main(int argc, char* argv[]) {
   vector<char*> labels = {"√","^","+/-","DEL","÷","×","-","+","="};
   
   for (int i = 0; i < 9; i++) {
-    Fl_Button *function = new Fl_Button(x[i],y[i],100,68,labels[i]);
-    functionbuttons.push_back(function);
+    OperatorButton *function = new OperatorButton(x[i],y[i],100,68,labels[i],labels[i]);
+    operatorButtons.push_back(function);
   }
 
-  for (auto i : functionbuttons) {
+  for (auto i : operatorButtons) {
     i->color(c);
     i->labelcolor(FL_WHITE);
     i->labelsize(24);
   }
 
+  for (auto i : operatorButtons) {
+    i->callback(functioncb);
+  }
 
   window->end();
   window->show(argc,argv);
