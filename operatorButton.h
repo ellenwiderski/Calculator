@@ -2,8 +2,8 @@
 
 class OperatorButton : public Fl_Button {
  private:
-  char* symbol;
+  char symbol;
  public:
-  OperatorButton(int,int,int,int,char*,char*);
-  char* getOperator();
+  OperatorButton(int,int,int,int,char*,char);
+  char getOperator();
 };
