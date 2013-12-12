@@ -12,14 +12,44 @@
 #include <math.h>
 #include "operandButton.h"
 #include "operatorButton.h"
+#include <iostream>
 using namespace std;
 
 //Global Variables:
 Fl_Box *number;
 vector<OperandButton*> operandButtons;
 vector<OperatorButton*> operatorButtons;
-stack<string> operandStack;
+stack<float> operandStack;
 vector<string> digits;
+vector<Fl_Box*> screens;
+
+
+void scoochdown() {
+  screens[0]->copy_label("");
+  stack<float> temp;
+  int numloops = operandStack.size();
+  cout << numloops<< endl;
+
+  for (auto i : screens) {
+    i->copy_label("");
+  }
+
+  for (int i=1; i < numloops+1; i++) {
+    if (i < 4) {
+      screens[i]->copy_label(to_string(operandStack.top()).c_str());
+      temp.push(operandStack.top());
+     operandStack.pop();
+    }
+  }
+  
+  numloops = temp.size();
+  
+  for (int j = 0; j < numloops; j++) {
+    operandStack.push(temp.top());
+    temp.pop();
+  }
+
+}
 
 //Callbacks:
 
@@ -33,8 +63,24 @@ void numbercb(Fl_Widget * w, void *) {
     num += i;
   }
 
-  number->copy_label(num.c_str());
+  screens[0]->copy_label(num.c_str());
 }
+
+void entercb(Fl_Widget * w, void *) {
+  if (digits.size() > 0) {
+    string num = "";
+    for (auto i : digits) {
+      num += i;
+    }
+    digits.clear();
+    operandStack.push(stof(num));
+  }
+
+  scoochdown();
+
+}
+
+
 
 void functioncb(Fl_Widget * w, void *) {
   OperatorButton *op = (OperatorButton *)w;
@@ -43,9 +89,9 @@ void functioncb(Fl_Widget * w, void *) {
 
   if (operandStack.size() > 1) {
 
-    float num1 = stof(operandStack.top());
+    float num1 = operandStack.top();
     operandStack.pop();
-    float num2 = stof(operandStack.top());
+    float num2 = operandStack.top();
     operandStack.pop();
   
     float ans = 0.0;
@@ -78,35 +124,36 @@ void functioncb(Fl_Widget * w, void *) {
       }
     }
 
-    number->copy_label(to_string(ans).c_str());
-    operandStack.push(to_string(ans));
-    }
-}
+    screens[1]->copy_label(to_string(ans).c_str());
+    operandStack.push(ans);
 
-void entercb(Fl_Widget * w, void *) {
-  if (digits.size() > 0) {
-    string num = "";
-    for (auto i : digits) {
-      num += i;
+    scoochdown();
+
     }
-    digits.clear();
-    operandStack.push(num);
-  }
 }
 
 void dropcb(Fl_Widget * w, void *) {
+
   if (operandStack.size() > 0) {
     operandStack.pop();
   }
+  if (operandStack.size() == 0) {
+    screens[0]->copy_label("");
+  }
+  else {
+    screens[0]->copy_label(to_string(operandStack.top()).c_str());
+  }
+
+  scoochdown();
 }
 
 void signcb(Fl_Widget * w, void *) {
   if (operandStack.size() > 0) {
-    string num = operandStack.top();
+    float num = operandStack.top();
     operandStack.pop();
-    num = "-" + num;
+    num = num * -1;
     operandStack.push(num);
-    number->copy_label(operandStack.top().c_str());
+    screens[0]->copy_label(to_string(operandStack.top()).c_str());
   }
 }
 
@@ -115,41 +162,49 @@ void squarerootcb(Fl_Widget * w, void *) {
 
     float ans = 0.0;
 
-    ans = sqrt(stof(operandStack.top()));
+    ans = sqrt(operandStack.top());
     operandStack.pop();
-    number->copy_label(to_string(ans).c_str());
-    operandStack.push(to_string(ans));
+    screens[0]->copy_label(to_string(ans).c_str());
+    operandStack.push(ans);
   }
+  scoochdown();
+}
+
+void clearcb(Fl_Widget * w, void *) {
+  int numloops = operandStack.size();
+  for (int i = 0; i < numloops; i++) {
+    operandStack.pop();
+  }
+  scoochdown();
 }
 
 //Main:
 int main(int argc, char* argv[]) {
-  Fl_Window *window = new Fl_Window(500,600);
+  Fl_Window *window = new Fl_Window(500,760);
   
-  Fl_Box *screen = new Fl_Box(20,20,460,100,"");
-  screen->box(FL_EMBOSSED_BOX);
-  number = new Fl_Box(20,20,460,100,"");
-  number->align(FL_ALIGN_CENTER);
-  number->labelsize(48);
-  // Purple!
-  Fl_Color c = fl_rgb_color(240, 208, 255);
-  screen->color(c);
+  vector<int> y = {230,160,90,20};
 
+  Fl_Color c = fl_rgb_color(240, 208, 255);
+
+  for (int i = 0; i < 4; i++) {
+    Fl_Box *screen = new Fl_Box(20,y[i],460,50,"");
+    screen->box(FL_EMBOSSED_BOX);
+    screen->labelsize(24);
+    // Purple!
+    screen->color(c);
+    screens.push_back(screen);
+  }
+
+  y.clear();
 
   //Make the number buttons!
   vector<int> x = {20,20,140,260,20,140,260,20,140,260};
-  vector<int> y = {508,416,416,416,324,324,324,232,232,232};
+  y = {508,416,416,416,324,324,324,232,232,232};
   c = fl_rgb_color(73,7,90);
 
   for (int i = 0; i < 10; i++) {
-    if (i != 0) {
-      OperandButton *num = new OperandButton(x[i],y[i],100,68,"",i);
+      OperandButton *num = new OperandButton(x[i],y[i]+160,100,68,"",i);
       operandButtons.push_back(num);
-    }
-    else {
-      OperandButton *num = new OperandButton(x[i],y[i],220,68,"",i);
-      operandButtons.push_back(num);
-    }
   }
 
   //Give those beautiful number buttons some labels & color
@@ -178,7 +233,7 @@ int main(int argc, char* argv[]) {
   vector<char> symbols = {'p','/','*','-','+'};
   
   for (int i = 0; i < 5; i++) {
-    OperatorButton *function = new OperatorButton(x[i],y[i],100,68,labels[i],symbols[i]);
+    OperatorButton *function = new OperatorButton(x[i],y[i]+160,100,68,labels[i],symbols[i]);
     operatorButtons.push_back(function);
   }
 
@@ -186,29 +241,35 @@ int main(int argc, char* argv[]) {
     i->callback(functioncb);
   }
 
-  Fl_Button *enter = new Fl_Button(260,508,100,68,"ENTER");
+  Fl_Button *enter = new Fl_Button(260,668,100,68,"ENTER");
   enter->callback(entercb);
   enter->color(c);
   enter->labelcolor(FL_WHITE);
   enter->labelsize(24);
 
-  Fl_Button *drop = new Fl_Button(380,140,100,68,"DROP");
+  Fl_Button *drop = new Fl_Button(260,300,100,68,"DROP");
   drop->callback(dropcb);
   drop->color(c);
   drop->labelcolor(FL_WHITE);
   drop->labelsize(24);
 
-  Fl_Button *sqrt = new Fl_Button(20,140,100,68,"√");
+  Fl_Button *sqrt = new Fl_Button(20,300,100,68,"√");
   sqrt->callback(squarerootcb);
   sqrt->color(c);
   sqrt->labelcolor(FL_WHITE);
   sqrt->labelsize(24);
 
-  Fl_Button *sign = new Fl_Button(260,140,100,68,"+/-");
+  Fl_Button *sign = new Fl_Button(140,668,100,68,"+/-");
   sign->callback(signcb);
   sign->color(c);
   sign->labelcolor(FL_WHITE);
   sign->labelsize(24);
+
+  Fl_Button *clear = new Fl_Button(380,300,100,68,"CLR");
+  clear->callback(clearcb);
+  clear->color(c);
+  clear->labelcolor(FL_WHITE);
+  clear->labelsize(24);
 
 
   for (auto i : operatorButtons) {
