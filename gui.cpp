@@ -28,7 +28,6 @@ void scoochdown() {
   screens[0]->copy_label("");
   stack<float> temp;
   int numloops = operandStack.size();
-  cout << numloops<< endl;
 
   for (auto i : screens) {
     i->copy_label("");
